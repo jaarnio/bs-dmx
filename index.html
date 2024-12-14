@@ -16,18 +16,27 @@
         width: 100%;
         height: auto;
       }
+      .label {
+        font-size: 35px;
+      }
     </style>
   </head>
   <body>
     <video id="video" controls>
-      <source src="./lightning-strikes.mp4" type="video/mp4" />
+      <source src="lightning-strikes.mp4" type="video/mp4" />
       Your browser does not support the video tag.
     </video>
     <canvas id="canvas" style="display: none"></canvas>
+    <div id="max-luminance" class="label">Max Luminance: 0</div>
     <script>
       const video = document.getElementById("video");
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
+      const maxLuminanceElement = document.getElementById("max-luminance");
+
+      let weightedAverageLuminance = 0;
+      let highestLuminance = 0;
+      const alpha = 0.2; // Smoothing factor for EMA
 
       video.addEventListener("play", () => {
         const analyzeVideoFrame = () => {
@@ -80,11 +89,28 @@
             const averageB = Math.round(totalB / pixelCount);
             const averageLuminance = totalLuminance / pixelCount;
 
+            // Update weighted average luminance using EMA
+            weightedAverageLuminance =
+              alpha * averageLuminance + (1 - alpha) * weightedAverageLuminance;
+
+            // Determine the current highest luminance value
+            const currentMaxLuminance = Math.max(
+              weightedAverageLuminance,
+              averageLuminance
+            );
+            if (currentMaxLuminance > highestLuminance) {
+              highestLuminance = currentMaxLuminance;
+              maxLuminanceElement.textContent = `Max Luminance: ${highestLuminance.toFixed(
+                2
+              )}`;
+            }
+
             // Log the results
             console.log(`Average Color: rgb(${averageR}, ${averageG}, ${averageB})`);
             console.log(`Min Luminance: ${minLuminance}`);
             console.log(`Max Luminance: ${maxLuminance}`);
             console.log(`Average Luminance: ${averageLuminance}`);
+            console.log(`Weighted Average Luminance: ${weightedAverageLuminance}`);
 
             // Continue analyzing the next frame
             requestAnimationFrame(analyzeVideoFrame);
