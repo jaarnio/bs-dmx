@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Analysis</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      video {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="video" controls>
+      <source src="./lightning-strikes.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+    <canvas id="canvas" style="display: none"></canvas>
+    <script>
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      video.addEventListener("play", () => {
+        const analyzeVideoFrame = () => {
+          if (video.paused || video.ended) {
+            return;
+          }
+
+          // Set canvas dimensions to match the video
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+
+          // Draw the current frame of the video onto the canvas
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          try {
+            // Get the pixel data of the frame
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Initialize variables for calculations
+            let totalR = 0,
+              totalG = 0,
+              totalB = 0;
+            let minLuminance = Infinity,
+              maxLuminance = -Infinity,
+              totalLuminance = 0;
+
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+
+              // Calculate average RGB
+              totalR += r;
+              totalG += g;
+              totalB += b;
+
+              // Calculate luminance
+              const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+              totalLuminance += luminance;
+
+              // Track min and max luminance
+              if (luminance < minLuminance) minLuminance = luminance;
+              if (luminance > maxLuminance) maxLuminance = luminance;
+            }
+
+            const pixelCount = data.length / 4;
+            const averageR = Math.round(totalR / pixelCount);
+            const averageG = Math.round(totalG / pixelCount);
+            const averageB = Math.round(totalB / pixelCount);
+            const averageLuminance = totalLuminance / pixelCount;
+
+            // Log the results
+            console.log(`Average Color: rgb(${averageR}, ${averageG}, ${averageB})`);
+            console.log(`Min Luminance: ${minLuminance}`);
+            console.log(`Max Luminance: ${maxLuminance}`);
+            console.log(`Average Luminance: ${averageLuminance}`);
+
+            // Continue analyzing the next frame
+            requestAnimationFrame(analyzeVideoFrame);
+          } catch (e) {
+            console.error("Error analyzing video frame:", e);
+          }
+        };
+
+        analyzeVideoFrame();
+      });
+    </script>
+  </body>
+</html>
